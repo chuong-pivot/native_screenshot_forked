@@ -271,7 +271,7 @@ public class NativeScreenshotPlugin implements MethodCallHandler, FlutterPlugin,
 
 			view.setDrawingCacheEnabled(false);
 
-			String path = writeBitmap(bitmap);
+			String path = writeBitmap(bitmap, saveScreenshotPath);
 
 			if(path == null || path.isEmpty() ) {
 				this.ssError = true;
