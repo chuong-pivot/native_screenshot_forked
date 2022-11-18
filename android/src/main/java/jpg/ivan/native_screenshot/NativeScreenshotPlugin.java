@@ -132,13 +132,15 @@ public class NativeScreenshotPlugin implements MethodCallHandler, FlutterPlugin,
 	// MethodCall, manage stuff coming from Dart
 	@Override
 	public void onMethodCall(@NonNull MethodCall call, @NonNull Result result) {
-		if( !permissionToWrite() ) {
-			Log.println(Log.INFO, TAG, "Permission to write files missing!");
+		String filePath = call.argument("saveScreenshotPath");
+		
+		if(filePath == null || filePath.isEmpty()) {
+			Log.println(Log.INFO, TAG, "Require save screenshot path argument!");
 
 			result.success(null);
 
 			return;
-		} // if cannot write
+		} 
 
 		if( !call.method.equals("takeScreenshot") ) {
 			Log.println(Log.INFO, TAG, "Method not implemented!");
@@ -146,116 +148,44 @@ public class NativeScreenshotPlugin implements MethodCallHandler, FlutterPlugin,
 			result.notImplemented();
 
 			return;
-		} // if not implemented
-
+		} 
 
 		// Need to fix takeScreenshot()
 		// it produces just a black image
 		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-			// takeScreenshot();
-			takeScreenshotOld();
+			takeScreenshot();
+//			takeScreenshotOld();
 		} else {
-			takeScreenshotOld();
-		} // if
+			takeScreenshotOld(filePath);
+		}
 
 		if( this.ssError || this.ssPath == null || this.ssPath.isEmpty() ) {
 			result.success(null);
 
 			return;
-		} // if error
+		}
 
 		result.success(this.ssPath);
-	} // onMethodCall()
+	}
 
-
-	// Own functions, plugin specific functionality
-	private String getScreenshotName() {
-		java.text.SimpleDateFormat sf = new java.text.SimpleDateFormat("yyyyMMddHHmmss");
-		String sDate = sf.format(new Date());
-
-		return "native_screenshot-" + sDate + ".png";
-	} // getScreenshotName()
-
-	private String getApplicationName() {
-		ApplicationInfo appInfo = null;
-
+	private String writeBitmap(Bitmap bitmap, String saveScreenshotPath) {
 		try {
-			appInfo = this.context.getPackageManager()
-					.getApplicationInfo(this.context.getPackageName(), 0);
-		} catch (Exception ex) {
-			Log.println(Log.INFO, TAG, "Error getting package name, using default. Err: " + ex.getMessage());
-		}
-
-		if(appInfo == null) {
-			return "NativeScreenshot";
-		} // if null
-
-		CharSequence cs = this.context.getPackageManager().getApplicationLabel(appInfo);
-		StringBuilder name = new StringBuilder( cs.length() );
-
-		name.append(cs);
-
-		if( name.toString().trim().isEmpty() ) {
-			return "NativeScreenshot";
-		}
-
-		return name.toString();
-	} // getApplicationName()
-
-	private String getScreenshotPath() {
-		String externalDir = Environment.getExternalStorageDirectory().getAbsolutePath();
-
-		String sDir = externalDir
-						+ File.separator
-						+ getApplicationName();
-
-		File dir = new File(sDir);
-
-		String dirPath;
-
-		if( dir.exists() || dir.mkdir()) {
-			dirPath = sDir + File.separator + getScreenshotName();
-		} else {
-			dirPath = externalDir + File.separator + getScreenshotName();
-		}
-
-		Log.println(Log.INFO, TAG, "Built ScreeshotPath: " + dirPath);
-
-		return dirPath;
-	} // getScreenshotPath()
-
-	private String writeBitmap(Bitmap bitmap) {
-		try {
-			String path = getScreenshotPath();
-			File imageFile = new File(path);
+			File imageFile = new File(saveScreenshotPath);
 			FileOutputStream oStream = new FileOutputStream(imageFile);
 
 			bitmap.compress(Bitmap.CompressFormat.PNG, 100, oStream);
 			oStream.flush();
 			oStream.close();
 
-			return path;
+			return saveScreenshotPath;
 		} catch (Exception ex) {
 			Log.println(Log.INFO, TAG, "Error writing bitmap: " + ex.getMessage());
 		}
 
 		return null;
-	} // writeBitmap()
+	}
 
-	private void reloadMedia() {
-		try {
-			Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-			File file = new File(this.ssPath);
-			Uri uri = Uri.fromFile(file);
-
-			intent.setData(uri);
-			this.activity.sendBroadcast(intent);
-		} catch (Exception ex) {
-			Log.println(Log.INFO, TAG, "Error reloading media lib: " + ex.getMessage());
-		}
-	} // reloadMedia()
-
-	private void takeScreenshot() {
+	private void takeScreenshot(String savedScreenshotPath) {
 		Log.println(Log.INFO, TAG, "Trying to take screenshot [new way]");
 
 		if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
@@ -303,22 +233,25 @@ public class NativeScreenshotPlugin implements MethodCallHandler, FlutterPlugin,
 //				return;
 //			} // if error
 
-			String path = writeBitmap(bitmap);
+			String path = writeBitmap(bitmap, savedScreenshotPath);
+
 			if( path == null || path.isEmpty() ) {
 				this.ssPath = null;
 				this.ssError = true;
-			} // if no path
+
+				Log.println(Log.INFO, TAG, "The bitmap cannot be written, invalid path.");
+
+				return;
+			}
 
 			this.ssError = false;
 			this.ssPath = path;
-
-			reloadMedia();
 		} catch (Exception ex) {
 			Log.println(Log.INFO, TAG, "Error taking screenshot: " + ex.getMessage());
 		}
-	} // takeScreenshot()
+	}
 
-	private void takeScreenshotOld() {
+	private void takeScreenshotOld(String saveScreenshotPath) {
 		Log.println(Log.INFO, TAG, "Trying to take screenshot [old way]");
 
 		try {
@@ -327,6 +260,7 @@ public class NativeScreenshotPlugin implements MethodCallHandler, FlutterPlugin,
 			view.setDrawingCacheEnabled(true);
 
 			Bitmap bitmap = null;
+
 			if (this.renderer.getClass() == FlutterView.class) {
 				bitmap = ((FlutterView) this.renderer).getBitmap();
 			} else if(this.renderer.getClass() == FlutterRenderer.class ) {
@@ -337,57 +271,28 @@ public class NativeScreenshotPlugin implements MethodCallHandler, FlutterPlugin,
 				this.ssError = true;
 				this.ssPath = null;
 
-				Log.println(Log.INFO, TAG, "The bitmap cannot be created :(");
+				Log.println(Log.INFO, TAG, "The bitmap cannot be created");
 
 				return;
-			} // if
+			}
 
 			view.setDrawingCacheEnabled(false);
 
 			String path = writeBitmap(bitmap);
-			if( path == null || path.isEmpty() ) {
+
+			if(path == null || path.isEmpty() ) {
 				this.ssError = true;
 				this.ssPath = null;
 
 				Log.println(Log.INFO, TAG, "The bitmap cannot be written, invalid path.");
 
 				return;
-			} // if
+			}
 
 			this.ssError = false;
 			this.ssPath = path;
-
-			reloadMedia();
 		} catch (Exception ex) {
 			Log.println(Log.INFO, TAG, "Error taking screenshot: " + ex.getMessage());
 		}
-	} // takeScreenshot()
-
-	private boolean permissionToWrite() {
-		if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-			Log.println(Log.INFO, TAG, "Permission to write false due to version codes.");
-
-			return false;
-		}
-
-		int perm = this.activity.checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-
-		if(perm == PackageManager.PERMISSION_GRANTED) {
-			Log.println(Log.INFO, TAG, "Permission to write granted!");
-
-			return true;
-		} // if
-
-		Log.println(Log.INFO, TAG, "Requesting permissions...");
-		this.activity.requestPermissions(
-			new String[]{
-				Manifest.permission.WRITE_EXTERNAL_STORAGE
-			},
-			11
-		); // requestPermissions()
-
-		Log.println(Log.INFO, TAG, "No permissions :(");
-
-		return false;
-	} // permissionToWrite()
-} // NativeScreenshotPlugin
+	}
+}
