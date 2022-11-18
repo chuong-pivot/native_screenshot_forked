@@ -178,7 +178,7 @@ public class NativeScreenshotPlugin implements MethodCallHandler, FlutterPlugin,
 		return null;
 	}
 
-	// private void takeScreenshot(String savedScreenshotPath) {
+	// private void takeScreenshot(String saveScreenshotPath) {
 	// 	Log.println(Log.INFO, TAG, "Trying to take screenshot [new way]");
 
 	// 	if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
@@ -226,7 +226,7 @@ public class NativeScreenshotPlugin implements MethodCallHandler, FlutterPlugin,
 	// 			return;
 	// 		}
 
-	// 		String path = writeBitmap(bitmap, savedScreenshotPath);
+	// 		String path = writeBitmap(bitmap, saveScreenshotPath);
 
 	// 		if( path == null || path.isEmpty() ) {
 	// 			this.ssPath = null;

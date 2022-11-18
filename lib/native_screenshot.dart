@@ -16,7 +16,7 @@ class NativeScreenshot {
       {required String saveScreenshotPath}) async {
     final String? path =
         await _channel.invokeMethod('takeScreenshot', <String, dynamic>{
-      'filePath': saveScreenshotPath,
+      'saveScreenshotPath': saveScreenshotPath,
     });
 
     return path;
