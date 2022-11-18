@@ -150,14 +150,7 @@ public class NativeScreenshotPlugin implements MethodCallHandler, FlutterPlugin,
 			return;
 		} 
 
-		// Need to fix takeScreenshot()
-		// it produces just a black image
-		if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-			takeScreenshot();
-//			takeScreenshotOld();
-		} else {
-			takeScreenshotOld(filePath);
-		}
+		takeScreenshotOld(filePath);
 
 		if( this.ssError || this.ssPath == null || this.ssPath.isEmpty() ) {
 			result.success(null);
@@ -185,71 +178,71 @@ public class NativeScreenshotPlugin implements MethodCallHandler, FlutterPlugin,
 		return null;
 	}
 
-	private void takeScreenshot(String savedScreenshotPath) {
-		Log.println(Log.INFO, TAG, "Trying to take screenshot [new way]");
+	// private void takeScreenshot(String savedScreenshotPath) {
+	// 	Log.println(Log.INFO, TAG, "Trying to take screenshot [new way]");
 
-		if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
-			this.ssPath = null;
-			this.ssError = true;
+	// 	if(Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+	// 		this.ssPath = null;
+	// 		this.ssError = true;
 
-			return;
-		}
+	// 		return;
+	// 	}
 
-		try {
-			Window window = this.activity.getWindow();
-			View view = this.activity.getWindow().getDecorView().getRootView();
+	// 	try {
+	// 		Window window = this.activity.getWindow();
+	// 		View view = this.activity.getWindow().getDecorView().getRootView();
 
-			Bitmap bitmap = Bitmap.createBitmap(
-					view.getWidth(),
-					view.getHeight(),
-					Bitmap.Config.ARGB_8888
-			); // Bitmap()
+	// 		Bitmap bitmap = Bitmap.createBitmap(
+	// 				view.getWidth(),
+	// 				view.getHeight(),
+	// 				Bitmap.Config.ARGB_8888
+	// 		);
 
-			Canvas canvas = new Canvas(bitmap);
-			view.draw(canvas);
+	// 		Canvas canvas = new Canvas(bitmap);
+	// 		view.draw(canvas);
 
-//			int[] windowLocation = new int[2];
-//			view.getLocationInWindow(windowLocation);
-//
-//			PixelListener listener = new PixelListener();
-//
-//			PixelCopy.request(
-//					window,
-//              new Rect(
-//                      windowLocation[0],
-//                      windowLocation[1],
-//                      windowLocation[0] + view.getWidth(),
-//                      windowLocation[1] + view.getHeight()
-//              ),
-//					bitmap,
-//					listener,
-//					new Handler()
-//			); // PixelCopy.request()
-//
-//			if( listener.hasError() ) {
-//				this.ssError = true;
-//				this.ssPath = null;
-//
-//				return;
-//			} // if error
+	// 		int[] windowLocation = new int[2];
+	// 		view.getLocationInWindow(windowLocation);
 
-			String path = writeBitmap(bitmap, savedScreenshotPath);
+	// 		PixelListener listener = new PixelListener();
 
-			if( path == null || path.isEmpty() ) {
-				this.ssPath = null;
-				this.ssError = true;
+	// 		PixelCopy.request(
+	// 				window,
+   //           new Rect(
+   //                   windowLocation[0],
+   //                   windowLocation[1],
+   //                   windowLocation[0] + view.getWidth(),
+   //                   windowLocation[1] + view.getHeight()
+   //           ),
+	// 				bitmap,
+	// 				listener,
+	// 				new Handler()
+	// 		);
 
-				Log.println(Log.INFO, TAG, "The bitmap cannot be written, invalid path.");
+	// 		if( listener.hasError() ) {
+	// 			this.ssError = true;
+	// 			this.ssPath = null;
 
-				return;
-			}
+	// 			return;
+	// 		}
 
-			this.ssError = false;
-			this.ssPath = path;
-		} catch (Exception ex) {
-			Log.println(Log.INFO, TAG, "Error taking screenshot: " + ex.getMessage());
-		}
-	}
+	// 		String path = writeBitmap(bitmap, savedScreenshotPath);
+
+	// 		if( path == null || path.isEmpty() ) {
+	// 			this.ssPath = null;
+	// 			this.ssError = true;
+
+	// 			Log.println(Log.INFO, TAG, "The bitmap cannot be written, invalid path.");
+
+	// 			return;
+	// 		}
+
+	// 		this.ssError = false;
+	// 		this.ssPath = path;
+	// 	} catch (Exception ex) {
+	// 		Log.println(Log.INFO, TAG, "Error taking screenshot: " + ex.getMessage());
+	// 	}
+	// }
 
 	private void takeScreenshotOld(String saveScreenshotPath) {
 		Log.println(Log.INFO, TAG, "Trying to take screenshot [old way]");
